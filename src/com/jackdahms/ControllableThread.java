@@ -6,7 +6,6 @@ public class ControllableThread implements Runnable{
 	Thread base;
 	
 	boolean running;
-	boolean fixedTimestep; //must be set before loop is started
 	
 	double ups;
 	double fps;
@@ -18,7 +17,6 @@ public class ControllableThread implements Runnable{
 		this.target = target;
 		
 		running = true;
-		fixedTimestep = true;
 		
 		targetUps = 20;
 		targetFps = 60;
@@ -26,42 +24,78 @@ public class ControllableThread implements Runnable{
 		base = new Thread(this);
 	}
 	
+	//fixed timestep loop
 	public void run() {
-		if (fixedTimestep) { //best for games that need synchronization (e.g. multiplayer)
+		double updateTime = 1000000000 / targetUps;
+		double targetRenderTime = 1000000000 / targetFps;
+		int maxFrameskip = 5;
+		int frameCount = 0;
+		
+		double lastUpdateTime = System.nanoTime();
+		double lastRenderTime = System.nanoTime();
+		
+		int lastSecondTime = (int) (lastUpdateTime / 1000000000);
+		
+		boolean paused = false;
+		
+		while (running) {
+			double now = System.nanoTime();
+			int updateCount = 0;
 			
-			long lastFpsTime;
-			
-			long lastLoopTime = System.nanoTime();
-			long optimalFps = 1000000000 / targetFps;
-			
-			while (running) {
-				//calculate time since last update
-				long now = System.nanoTime();
-				long updateLength = now - lastLoopTime;
-				lastLoopTime = now;
-				double delta = updateLength / (double) optimalFps;
+			if (!paused) {
 				
-				//update frame counter
+				//update, catch up if needed
+				while (now - lastUpdateTime > updateTime && updateCount < maxFrameskip) {
+					target.update();
+					lastUpdateTime += updateTime;
+					updateCount++;
+				}
 				
+				//so the game doesn't do an insane amount of catch ups
+				if (now - lastUpdateTime > updateTime) {
+					lastUpdateTime = now - updateTime;
+				}
 				
-				target.update();
-				target.render();
+				//render
+				float interpolation = Math.min(1.0f, (float) ((now - lastUpdateTime) / updateTime));
+				target.render(interpolation);
+				lastRenderTime = now;
+				
+				//update frames
+				int thisSecond = (int) (lastUpdateTime / 1000000000);
+				if (thisSecond > lastSecondTime) {
+					System.out.println("NEW SECOND " + thisSecond + " " + frameCount);
+					fps = frameCount;
+					frameCount = 0;
+					lastSecondTime = thisSecond;
+				}
+				
+				while (now - lastRenderTime < targetRenderTime && now - lastUpdateTime < updateTime) {
+					Thread.yield();
+					
+					//stops program from consuming all your cpu
+					//makes it slightly less accurate
+					//can be removed to improve the game at the cost of the cpu (on certain os's)
+					try {
+						Thread.sleep(1);
+					} catch (Exception e) {}
+					
+					now = System.nanoTime();
+				}
 			}
-		} else { //variable timestep
-			
-		}
+		}		
 	}
 	
 	public void start() {
 		base.start();
 	}
-
-	public boolean isFixedTimestep() {
-		return fixedTimestep;
+	
+	public void setTargetUps(int targetUps) {
+		this.targetUps = targetUps;
 	}
-
-	public void setFixedTimestep(boolean fixedTimestep) {
-		this.fixedTimestep = fixedTimestep;
+	
+	public void setTargetFps(int targetFps) {
+		this.targetFps = targetFps;
 	}
 	
 }
