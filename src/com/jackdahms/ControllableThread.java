@@ -13,6 +13,8 @@ public class ControllableThread implements Runnable{
 	int targetUps;
 	int targetFps;
 	
+	int maxFrameskip;
+	
 	public ControllableThread(Controllable target) {
 		this.target = target;
 		
@@ -21,14 +23,17 @@ public class ControllableThread implements Runnable{
 		targetUps = 20;
 		targetFps = 60;
 				
+		maxFrameskip = 5;
+		
 		base = new Thread(this);
 	}
 	
 	//fixed timestep loop
 	public void run() {
+		
 		double updateTime = 1000000000 / targetUps;
 		double targetRenderTime = 1000000000 / targetFps;
-		int maxFrameskip = 5;
+		
 		int frameCount = 0;
 		
 		double lastUpdateTime = System.nanoTime();
@@ -59,12 +64,13 @@ public class ControllableThread implements Runnable{
 				//render
 				float interpolation = Math.min(1.0f, (float) ((now - lastUpdateTime) / updateTime));
 				target.render(interpolation);
+				frameCount++;
 				lastRenderTime = now;
 				
 				//update frames
 				int thisSecond = (int) (lastUpdateTime / 1000000000);
 				if (thisSecond > lastSecondTime) {
-					System.out.println("NEW SECOND " + thisSecond + " " + frameCount);
+//					System.out.println("NEW SECOND " + thisSecond + " " + frameCount);
 					fps = frameCount;
 					frameCount = 0;
 					lastSecondTime = thisSecond;
@@ -96,6 +102,18 @@ public class ControllableThread implements Runnable{
 	
 	public void setTargetFps(int targetFps) {
 		this.targetFps = targetFps;
+	}
+	
+	public void setMaxFrameskip(int maxFrameskip) {
+		this.maxFrameskip = maxFrameskip;
+	}
+	
+	public double getUps() {
+		return ups;
+	}
+	
+	public double getFps() {
+		return fps;
 	}
 	
 }
