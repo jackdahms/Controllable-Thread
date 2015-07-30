@@ -81,7 +81,7 @@ public class ControllableThread implements Runnable{
 					
 					//stops program from consuming all your cpu
 					//makes it slightly less accurate
-					//can be removed to improve the game at the cost of the cpu (on certain os's)
+					//can be removed to improve the game at the cost of the cpu
 					try {
 						Thread.sleep(1);
 					} catch (Exception e) {}
