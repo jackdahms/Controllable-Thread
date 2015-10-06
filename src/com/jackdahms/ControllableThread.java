@@ -96,6 +96,10 @@ public class ControllableThread implements Runnable{
 		base.start();
 	}
 	
+	public void stop() {
+		running = false;
+	}
+	
 	public void setTargetUps(int targetUps) {
 		this.targetUps = targetUps;
 	}
