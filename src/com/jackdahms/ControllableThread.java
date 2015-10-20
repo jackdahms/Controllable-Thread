@@ -6,6 +6,7 @@ public class ControllableThread implements Runnable{
 	Thread base;
 	
 	boolean running;
+	boolean paused;
 	
 	double ups;
 	double fps;
@@ -19,6 +20,7 @@ public class ControllableThread implements Runnable{
 		this.target = target;
 		
 		running = true;
+		paused = false;
 		
 		targetUps = 20;
 		targetFps = 60;
@@ -40,8 +42,6 @@ public class ControllableThread implements Runnable{
 		double lastRenderTime = System.nanoTime();
 		
 		int lastSecondTime = (int) (lastUpdateTime / 1000000000);
-		
-		boolean paused = false;
 		
 		while (running) {
 			double now = System.nanoTime();
@@ -98,6 +98,10 @@ public class ControllableThread implements Runnable{
 	
 	public void stop() {
 		running = false;
+	}
+	
+	public void setPaused(boolean paused) {
+		this.paused = paused;
 	}
 	
 	public void setTargetUps(int targetUps) {
