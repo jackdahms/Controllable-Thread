@@ -1,127 +1,145 @@
 package com.jackdahms;
 
-public class ControllableThread implements Runnable{
+public class ControllableThread implements Runnable {
 
-	Controllable target;
-	Thread base;
-	
-	boolean running;
-	boolean paused;
-	
-	double ups;
-	double fps;
-	
-	int targetUps;
-	int targetFps;
-	
-	int maxFrameskip;
-	
-	public ControllableThread(Controllable target) {
-		this.target = target;
-		
-		running = true;
-		paused = false;
-		
-		targetUps = 20;
-		targetFps = 60;
-				
-		maxFrameskip = 5;
-		
-		base = new Thread(this);
-	}
-	
-	//fixed timestep loop
-	public void run() {
-		
-		double updateTime = 1000000000 / targetUps;
-		double targetRenderTime = 1000000000 / targetFps;
-		
-		int frameCount = 0;
-		
-		double lastUpdateTime = System.nanoTime();
-		double lastRenderTime = System.nanoTime();
-		
-		int lastSecondTime = (int) (lastUpdateTime / 1000000000);
-		
-		while (running) {
-			double now = System.nanoTime();
-			int updateCount = 0;
-			
-			if (!paused) {
-				
-				//update, catch up if needed
-				while (now - lastUpdateTime > updateTime && updateCount < maxFrameskip) {
-					target.update();
-					lastUpdateTime += updateTime;
-					updateCount++;
-				}
-				
-				//so the game doesn't do an insane amount of catch ups
-				if (now - lastUpdateTime > updateTime) {
-					lastUpdateTime = now - updateTime;
-				}
-				
-				//render
-				float interpolation = Math.min(1.0f, (float) ((now - lastUpdateTime) / updateTime));
-				target.render(interpolation);
-				frameCount++;
-				lastRenderTime = now;
-				
-				//update frames
-				int thisSecond = (int) (lastUpdateTime / 1000000000);
-				if (thisSecond > lastSecondTime) {
-//					System.out.println("NEW SECOND " + thisSecond + " " + frameCount);
-					fps = frameCount;
-					frameCount = 0;
-					lastSecondTime = thisSecond;
-				}
-				
-				while (now - lastRenderTime < targetRenderTime && now - lastUpdateTime < updateTime) {
-					Thread.yield();
-					
-					//stops program from consuming all your cpu
-					//makes it slightly less accurate
-					//can be removed to improve the game at the cost of the cpu
-					try {
-						Thread.sleep(1);
-					} catch (Exception e) {}
-					
-					now = System.nanoTime();
-				}
-			}
-		}		
-	}
-	
-	public void start() {
-		base.start();
-	}
-	
-	public void stop() {
-		running = false;
-	}
-	
-	public void setPaused(boolean paused) {
-		this.paused = paused;
-	}
-	
-	public void setTargetUps(int targetUps) {
-		this.targetUps = targetUps;
-	}
-	
-	public void setTargetFps(int targetFps) {
-		this.targetFps = targetFps;
-	}
-	
-	public void setMaxFrameskip(int maxFrameskip) {
-		this.maxFrameskip = maxFrameskip;
-	}
-	
-	public double getUps() {
-		return ups;
-	}
-	
-	public double getFps() {
-		return fps;
-	}
-	
+    Controllable target;
+    Thread base;
+
+    boolean running;
+    boolean paused;
+    boolean hog; //if the thread can hog the cpu
+    boolean updatableUps;
+
+    double ups;
+    double fps;
+
+    int targetUps;
+    int targetFps;
+
+    int maxFrameskip;
+
+    public ControllableThread(Controllable target) {
+        this.target = target;
+
+        this.running = true;
+        this.paused = false;
+        this.hog = false;
+        this.updatableUps = false;
+
+        this.targetUps = 20;
+        this.targetFps = 60;
+
+        this.maxFrameskip = 5;
+
+        this.base = new Thread(this);
+    }
+
+    //fixed timestep loop
+    @Override
+    public void run() {
+
+        double updateTime = 1000000000 / this.targetUps;
+        double targetRenderTime = 1000000000 / this.targetFps;
+
+        int frameCount = 0;
+
+        double lastUpdateTime = System.nanoTime();
+        double lastRenderTime = System.nanoTime();
+
+        int lastSecondTime = (int) (lastUpdateTime / 1000000000);
+
+        while (this.running) {
+            double now = System.nanoTime();
+            int updateCount = 0;
+
+            if (!this.paused) {
+                if (this.updatableUps) {
+                    updateTime = 1000000000 / this.targetUps;
+                }
+
+                //update, catch up if needed
+                while (now - lastUpdateTime > updateTime
+                        && updateCount < this.maxFrameskip) {
+                    this.target.update();
+                    lastUpdateTime += updateTime;
+                    updateCount++;
+                }
+
+                //so the game doesn't do an insane amount of catch ups
+                if (now - lastUpdateTime > updateTime) {
+                    lastUpdateTime = now - updateTime;
+                }
+
+                //render
+                float interpolation = Math.min(1.0f,
+                        (float) ((now - lastUpdateTime) / updateTime));
+                this.target.render(interpolation);
+                frameCount++;
+                lastRenderTime = now;
+
+                //update frames
+                int thisSecond = (int) (lastUpdateTime / 1000000000);
+                if (thisSecond > lastSecondTime) {
+                    this.fps = frameCount;
+                    frameCount = 0;
+                    lastSecondTime = thisSecond;
+                }
+
+                while (now - lastRenderTime < targetRenderTime
+                        && now - lastUpdateTime < updateTime) {
+                    Thread.yield();
+
+                    if (!this.hog) {
+                        try {
+                            Thread.sleep(1);
+                        } catch (Exception e) {
+                        }
+                    }
+
+                    now = System.nanoTime();
+                }
+            }
+        }
+    }
+
+    public void start() {
+        this.base.start();
+    }
+
+    public void stop() {
+        this.running = false;
+    }
+
+    public void setHog(boolean hog) {
+        this.hog = hog;
+    }
+
+    public void setPaused(boolean paused) {
+        this.paused = paused;
+    }
+
+    public void setTargetUps(int targetUps) {
+        this.targetUps = targetUps;
+    }
+
+    public void setTargetFps(int targetFps) {
+        this.targetFps = targetFps;
+    }
+
+    public void setMaxFrameskip(int maxFrameskip) {
+        this.maxFrameskip = maxFrameskip;
+    }
+
+    public void setUpdatableUps(boolean updatableUps) {
+        this.updatableUps = updatableUps;
+    }
+
+    public double getUps() {
+        return this.ups;
+    }
+
+    public double getFps() {
+        return this.fps;
+    }
+
 }
