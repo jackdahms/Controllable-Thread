@@ -10,8 +10,7 @@ public class ControllableThread implements Runnable {
     boolean hog; //if the thread can hog the cpu
     boolean updatableUps;
 
-    double ups;
-    double fps;
+    int fps;
 
     int targetUps;
     int targetFps;
@@ -119,7 +118,11 @@ public class ControllableThread implements Runnable {
     }
 
     public void setTargetUps(int targetUps) {
-        this.targetUps = targetUps;
+        if (targetUps == 0) {
+            this.paused = true;
+        } else {
+            this.targetUps = targetUps;
+        }
     }
 
     public void setTargetFps(int targetFps) {
@@ -134,11 +137,7 @@ public class ControllableThread implements Runnable {
         this.updatableUps = updatableUps;
     }
 
-    public double getUps() {
-        return this.ups;
-    }
-
-    public double getFps() {
+    public int getFps() {
         return this.fps;
     }
 
