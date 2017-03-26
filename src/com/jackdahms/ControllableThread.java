@@ -6,9 +6,8 @@ public class ControllableThread implements Runnable {
     Thread base;
 
     boolean running;
-    boolean paused;
+    volatile boolean paused;
     boolean hog; //if the thread can hog the cpu
-    boolean updatableUps;
 
     int fps;
 
@@ -23,7 +22,6 @@ public class ControllableThread implements Runnable {
         this.running = true;
         this.paused = false;
         this.hog = false;
-        this.updatableUps = false;
 
         this.targetUps = 20;
         this.targetFps = 60;
@@ -52,9 +50,6 @@ public class ControllableThread implements Runnable {
             int updateCount = 0;
 
             if (!this.paused) {
-                if (this.updatableUps) {
-                    updateTime = 1000000000 / this.targetUps;
-                }
 
                 //update, catch up if needed
                 while (now - lastUpdateTime > updateTime
@@ -118,12 +113,7 @@ public class ControllableThread implements Runnable {
     }
 
     public void setTargetUps(int targetUps) {
-        if (targetUps == 0) {
-            this.paused = true;
-        } else {
-            this.paused = false;
-            this.targetUps = targetUps;
-        }
+        this.targetUps = targetUps;
     }
 
     public void setTargetFps(int targetFps) {
@@ -132,10 +122,6 @@ public class ControllableThread implements Runnable {
 
     public void setMaxFrameskip(int maxFrameskip) {
         this.maxFrameskip = maxFrameskip;
-    }
-
-    public void setUpdatableUps(boolean updatableUps) {
-        this.updatableUps = updatableUps;
     }
 
     public int getFps() {
