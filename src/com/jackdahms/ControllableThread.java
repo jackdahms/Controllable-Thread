@@ -121,6 +121,7 @@ public class ControllableThread implements Runnable {
         if (targetUps == 0) {
             this.paused = true;
         } else {
+            this.paused = false;
             this.targetUps = targetUps;
         }
     }
